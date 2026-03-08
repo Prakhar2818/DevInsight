@@ -13,31 +13,41 @@ export class RepoController {
 
   @Post('analyze')
   async analyze(@Body() body: any) {
-    const repoUrl = body?.url;
+    console.log('Received body:', JSON.stringify(body));
+    
+    const repoUrl = body?.repoUrl || body?.url;
 
     if (!repoUrl || typeof repoUrl !== 'string') {
       throw new HttpException(
-        'Invalid request: URL is required in body.url',
+        'Invalid request: repoUrl is required in body.repoUrl',
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    // Clean the URL if it has extra quotes
+    const cleanUrl = repoUrl.replace(/^"+|"+$/g, '');
 
     try {
-      new URL(repoUrl);
+      new URL(cleanUrl);
     } catch {
       throw new HttpException(
-        'Invalid URL format: ' + repoUrl,
+        'Invalid URL format: ' + cleanUrl,
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const repoPath = await this.repoService.cloneRepo(repoUrl);
+    const repoPath = await this.repoService.cloneRepo(cleanUrl);
 
-    const structure = this.repoService.readDirectory(repoPath);
+    // Get flat list of all files for FileTree
+    const files = this.repoService.flattenFiles(repoPath);
+    
+    // Get nested structure for analysis
+    const structure = this.repoService.readDirectoryRecursive(repoPath);
 
     return {
-      repoUrl,
+      repoUrl: cleanUrl,
       repoPath,
+      files,
       structure,
     };
   }

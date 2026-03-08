@@ -7,6 +7,7 @@ export class DocsController {
 
   @Post('generate')
   generate(@Body() body: any) {
-    return this.docsService.generateDoc(body.content);
+    const text = body?.content || body?.text || body?.repoUrl;
+    return this.docsService.generateDoc(text);
   }
 }

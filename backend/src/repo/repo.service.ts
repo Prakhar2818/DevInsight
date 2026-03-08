@@ -41,6 +41,7 @@ export class RepoService {
     return repoPath;
   }
 
+  // Read single directory (top-level only)
   readDirectory(dir: string) {
     const files = fs.readdirSync(dir);
 
@@ -53,6 +54,63 @@ export class RepoService {
         type: stat.isDirectory() ? 'folder' : 'file',
       };
     });
+  }
+
+  // Recursively read all files and folders
+  readDirectoryRecursive(dir: string, relativePath: string = ''): any[] {
+    const items: any[] = [];
+    const files = fs.readdirSync(dir);
+
+    // Filter out node_modules, .git, and other hidden folders
+    const filteredFiles = files.filter(file => !file.startsWith('.') && file !== 'node_modules');
+
+    for (const file of filteredFiles) {
+      const fullPath = path.join(dir, file);
+      const fileRelativePath = relativePath ? `${relativePath}/${file}` : file;
+      const stat = fs.statSync(fullPath);
+
+      if (stat.isDirectory()) {
+        // For directories, recursively get contents
+        const children = this.readDirectoryRecursive(fullPath, fileRelativePath);
+        items.push({
+          name: file,
+          type: 'folder',
+          path: fileRelativePath,
+          children: children.length > 0 ? children : []
+        });
+      } else {
+        items.push({
+          name: file,
+          type: 'file',
+          path: fileRelativePath,
+        });
+      }
+    }
+
+    return items;
+  }
+
+  // Flatten the directory tree for FileTree component
+  flattenFiles(dir: string, relativePath: string = ''): string[] {
+    const files: string[] = [];
+    const items = fs.readdirSync(dir);
+
+    // Filter out node_modules, .git, and other hidden folders
+    const filteredItems = items.filter(item => !item.startsWith('.') && item !== 'node_modules');
+
+    for (const item of filteredItems) {
+      const fullPath = path.join(dir, item);
+      const itemRelativePath = relativePath ? `${relativePath}/${item}` : item;
+      const stat = fs.statSync(fullPath);
+
+      if (stat.isDirectory()) {
+        files.push(...this.flattenFiles(fullPath, itemRelativePath));
+      } else {
+        files.push(itemRelativePath);
+      }
+    }
+
+    return files;
   }
 
   async askQuestion(structure: any, question: string) {
