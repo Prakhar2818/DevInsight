@@ -157,6 +157,8 @@ Repository Structure:
 ${JSON.stringify(structure, null, 2)}
 `;
 
+// test 
+
     const response = await this.llmService.explainRepoStructure(prompt);
 
     // 3️⃣ Save result to database
