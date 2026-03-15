@@ -1,0 +1,2 @@
+Frontend URL = https://devinsight-bm7.pages.dev
+Backend URL = https://devinsight-38sv.onrender.com
