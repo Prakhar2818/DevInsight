@@ -8,7 +8,7 @@ async function bootstrap() {
     app.enableCors({
       origin: [
         'http://localhost:3000',
-        'https://c38fed57.devinsight-bm7.pages.dev',
+        'https://devinsight-bm7.pages.dev',
 
       ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
