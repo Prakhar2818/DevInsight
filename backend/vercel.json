@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "main.js": {
+      "maxDuration": 60
+    }
+  }
+}
