@@ -7,8 +7,8 @@ import { ParserModule } from './parser/parser.module';
 import { DebugModule } from './debug/debug.module';
 import { FileModule } from './file/file.module';
 import { DocsModule } from './docs/docs.module';
-import { DiagramModule } from '../src/diagram/diagram.module';
-import { DatabaseModule } from '../src/database/database.module';
+import { DiagramModule } from './diagram/diagram.module';
+import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
