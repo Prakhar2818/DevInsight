@@ -2,7 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import simpleGit from 'simple-git';
 import * as fs from 'fs';
 import * as path from 'path';
-import { LlmService } from 'src/ai/llm.service';
+import { LlmService } from '../ai/llm.service';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Repo } from '../schema/repo.schema';
