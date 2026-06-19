@@ -1,67 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { repoIntelligence } from "../../services/api.service";
+import Link from "next/link";
+import { analyzeParser } from "../../services/api.service";
 import DashboardLayout from "@/components/DashboardLayout";
-import RepoStructure from "@/components/RepoStructure";
 import AnalysisLoader from "@/components/AnalysisLoader";
 import FileTree from "@/components/FileTree";
-import IntelligenceView from "@/components/IntelligenceView";
+import CodeViewer from "@/components/CodeViewer";
 
 export default function AnalyzerPage() {
   const [structure, setStructure] = useState<any>(null);
-  const [analysis, setAnalysis] = useState("");
+  const [metadata, setMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [files, setFiles] = useState<string[]>([]);
+  const [repoPath, setRepoPath] = useState("");
+  const [selectedFile, setSelectedFile] = useState<string>("");
 
   useEffect(() => {
     const data = localStorage.getItem("repoStructure");
+    const storedUrl = localStorage.getItem("repoUrl") || "";
 
-    if (data) {
+    if (data && storedUrl) {
       const parsed = JSON.parse(data);
-
       setStructure(parsed.structure || parsed);
       
-      // Use the flat files array directly from the backend
-      if (parsed.files && Array.isArray(parsed.files)) {
-        setFiles(parsed.files);
-      } else {
-        // Fallback: extract files from nested structure
-        const extractFiles = (obj: any): string[] => {
-          const result: string[] = [];
-          if (Array.isArray(obj)) {
-            obj.forEach((item) => {
-              if (typeof item === 'object' && item !== null) {
-                if (item.path) {
-                  result.push(item.path);
-                }
-                if (item.children) {
-                  result.push(...extractFiles(item.children));
-                }
-              }
-            });
-          } else if (typeof obj === 'object' && obj !== null) {
-            if (obj.path) {
-              result.push(obj.path);
-            }
-            if (obj.children) {
-              result.push(...extractFiles(obj.children));
-            }
-          }
-          return result;
-        };
-        const extractedFiles = extractFiles(parsed.structure || parsed);
-        setFiles(extractedFiles);
-      }
+      const name = storedUrl.split('/').pop()?.replace('.git', '');
+      const path = `repos/${name}`;
+      setRepoPath(path);
 
-      // Get repoUrl from localStorage
-      const repoUrl = localStorage.getItem("repoUrl") || "";
-      
-      repoIntelligence({ repoUrl, structure: parsed.structure || parsed }).then((res) => {
-        setAnalysis(res.data.result?.analysis || res.data.analysis || "");
+      analyzeParser(path).then((res) => {
+        setMetadata(res.data.metadata);
         setLoading(false);
       }).catch((err) => {
-        console.error("Error getting intelligence:", err);
+        console.error("Error getting analysis:", err);
         setLoading(false);
       });
     } else {
@@ -76,27 +46,48 @@ export default function AnalyzerPage() {
 
         {loading && <AnalysisLoader />}
 
-        {/* Architecture Explanation - Full width */}
-        {analysis && !loading && (
-          <div className="mb-4 flex-shrink-0">
-            <IntelligenceView analysis={analysis} />
+        {/* Metadata Grid */}
+        {metadata && !loading && (
+          <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
+            <div className="bg-white p-4 rounded-xl border border-[var(--border)] shadow-sm">
+              <p className="text-xs text-[var(--foreground-secondary)] uppercase tracking-wider font-semibold mb-1">Framework</p>
+              <p className="text-lg font-bold text-[var(--foreground)]">{metadata.framework}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-[var(--border)] shadow-sm">
+              <p className="text-xs text-[var(--foreground-secondary)] uppercase tracking-wider font-semibold mb-1">Language</p>
+              <p className="text-lg font-bold text-[var(--foreground)]">{metadata.language}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-[var(--border)] shadow-sm">
+              <p className="text-xs text-[var(--foreground-secondary)] uppercase tracking-wider font-semibold mb-1">Database</p>
+              <p className="text-lg font-bold text-[var(--foreground)]">{metadata.database}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-[var(--border)] shadow-sm">
+              <p className="text-xs text-[var(--foreground-secondary)] uppercase tracking-wider font-semibold mb-1">ORM</p>
+              <p className="text-lg font-bold text-[var(--foreground)]">{metadata.orm}</p>
+            </div>
           </div>
         )}
 
-        {/* Repository Structure and File Tree - Side by Side */}
-        {!loading && (
-          <div className="flex gap-4 flex-1">
-            <div className="flex-1">
-              <RepoStructure structure={structure} />
-            </div>
-            <div className="flex-1">
-              {files.length > 0 ? (
-                <FileTree files={files} />
-              ) : (
-                <div className="p-4 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl h-full">
-                  <p className="text-[var(--foreground-secondary)]">No files found</p>
-                </div>
-              )}
+        {/* Next Steps / CTAs */}
+        {!loading && metadata && (
+          <div className="mt-8 bg-white p-8 rounded-2xl border border-[var(--border)] shadow-sm text-center max-w-2xl mx-auto flex-shrink-0">
+            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-3">Analysis Complete!</h2>
+            <p className="text-[var(--foreground-secondary)] mb-6 text-lg">
+              We have successfully parsed the repository structure and extracted the tech stack.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Link 
+                href="/workspace"
+                className="px-6 py-3 bg-[#feefde] border border-[#ffdbb5] text-black rounded-lg font-semibold hover:bg-[#ffdbb5] transition-colors shadow-sm flex items-center justify-center"
+              >
+                <span className="text-black">Open Workspace</span>
+              </Link>
+              <a 
+                href="/chat"
+                className="px-6 py-3 bg-white border border-[var(--border)] text-[var(--foreground)] rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+              >
+                Ask AI Assistant
+              </a>
             </div>
           </div>
         )}

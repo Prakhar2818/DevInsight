@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { FileService } from './file.service';
 
 @Controller('file')
@@ -12,5 +12,17 @@ export class FileController {
     return {
       explanation,
     };
+  }
+
+  @Get('tree')
+  getTree(@Query('repoPath') repoPath: string) {
+    const tree = this.fileService.getDirectoryTree(repoPath);
+    return { tree };
+  }
+
+  @Get('content')
+  getContent(@Query('filePath') filePath: string) {
+    const content = this.fileService.getFileContent(filePath);
+    return { content };
   }
 }

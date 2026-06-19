@@ -29,6 +29,16 @@ export default function RepoInput() {
       localStorage.setItem("repoStructure", JSON.stringify(dataToSave));
       localStorage.setItem("repoUrl", url);
 
+      // Save to history
+      const historyStr = localStorage.getItem("repoHistory");
+      let history = historyStr ? JSON.parse(historyStr) : [];
+      if (!history.includes(url)) {
+        history.unshift(url);
+        // Keep last 10 repos
+        if (history.length > 10) history = history.slice(0, 10);
+        localStorage.setItem("repoHistory", JSON.stringify(history));
+      }
+
       router.push("/analyzer");
     } catch (error) {
       console.error("Analysis failed:", error);
@@ -39,13 +49,13 @@ export default function RepoInput() {
 
   return (
     <motion.div
-      className="glass-card rounded-xl p-8 max-w-2xl mx-auto"
+      className="bg-white rounded-[24px] p-8 max-w-2xl mx-auto border border-slate-200 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.4 }}
     >
       <motion.h2 
-        className="text-2xl font-semibold mb-2 text-foreground"
+        className="text-2xl font-bold mb-2 text-slate-900"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
@@ -54,7 +64,7 @@ export default function RepoInput() {
       </motion.h2>
       
       <motion.p 
-        className="text-foreground-secondary mb-6"
+        className="text-slate-500 mb-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
@@ -65,8 +75,8 @@ export default function RepoInput() {
       <div className="relative">
         {/* Input glow effect */}
         <motion.div
-          className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary-500 to-accent-cyan opacity-0"
-          animate={{ opacity: focused ? 0.5 : 0 }}
+          className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-sky-400 to-sky-200 opacity-0"
+          animate={{ opacity: focused ? 0.3 : 0 }}
           transition={{ duration: 0.3 }}
         />
 
@@ -78,12 +88,13 @@ export default function RepoInput() {
           <input
             type="text"
             placeholder="https://github.com/username/repo"
-            className="input-glass w-full p-4 pr-32 text-lg"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 pr-16 text-lg text-slate-700 outline-none focus:border-sky-400 focus:bg-white transition-all"
             onChange={(e) => setUrl(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             value={url}
             onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+            disabled={loading}
           />
           
           {/* Search icon */}
@@ -92,7 +103,7 @@ export default function RepoInput() {
             animate={{ scale: focused ? 1.1 : 1 }}
           >
             <svg 
-              className="w-6 h-6 text-foreground-muted" 
+              className="w-6 h-6 text-slate-400" 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -112,59 +123,59 @@ export default function RepoInput() {
       <motion.button
         onClick={handleAnalyze}
         disabled={loading || !url.trim()}
-        className="btn-primary w-full mt-6 py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full mt-6 py-4 text-lg font-semibold rounded-xl bg-[#feefde] text-slate-900 border border-[#ffdbb5] hover:bg-[#ffdbb5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         whileHover={!loading && url.trim() ? { scale: 1.02 } : {}}
         whileTap={!loading && url.trim() ? { scale: 0.98 } : {}}
       >
         <AnimatePresence mode="wait">
           {loading ? (
             <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center justify-center gap-3"
-            >
-              <motion.div
-                className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
-              <span>Analyzing...</span>
-            </motion.div>
+               key="loading"
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="flex items-center justify-center gap-3"
+             >
+               <motion.div
+                 className="w-5 h-5 border-2 border-slate-900/30 border-t-slate-900 rounded-full"
+                 animate={{ rotate: 360 }}
+                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+               />
+               <span>Analyzing...</span>
+             </motion.div>
           ) : (
             <motion.div
-              key="default"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center justify-center gap-2"
-            >
-              <span>Analyze Repository</span>
-              <motion.span
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              >
-                →
-              </motion.span>
-            </motion.div>
+               key="default"
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="flex items-center justify-center gap-2"
+             >
+               <span>Analyze Repository</span>
+               <motion.span
+                 animate={{ x: [0, 5, 0] }}
+                 transition={{ duration: 1, repeat: Infinity }}
+               >
+                 →
+               </motion.span>
+             </motion.div>
           )}
         </AnimatePresence>
       </motion.button>
 
       {/* Quick suggestions */}
       <motion.div
-        className="mt-6 flex flex-wrap gap-2 justify-center"
+        className="mt-6 flex flex-wrap gap-2 justify-center items-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
       >
-        <span className="text-sm text-foreground-muted">Try:</span>
+        <span className="text-sm font-medium text-slate-400">Try:</span>
         {["facebook/react", "vercel/next.js", "nestjs/nest"].map((repo, i) => (
           <motion.button
             key={repo}
             onClick={() => setUrl(`https://github.com/${repo}`)}
-            className="text-sm px-3 py-1 rounded-full bg-white/5 text-foreground-secondary hover:text-foreground hover:bg-white/10 transition-colors"
+            className="text-sm px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 border border-slate-200 transition-colors"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, y: 10 }}

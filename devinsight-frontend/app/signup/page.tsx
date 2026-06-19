@@ -104,7 +104,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-8 w-full bg-slate-900 text-white rounded-xl py-3.5 font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
+              className="mt-8 w-full bg-[#feefde] border border-[#ffdbb5] text-slate-900 rounded-xl py-3.5 font-semibold hover:bg-[#ffdbb5] transition-colors shadow-sm disabled:opacity-50"
             >
               {isLoading ? 'Creating account...' : 'Sign Up'}
             </button>

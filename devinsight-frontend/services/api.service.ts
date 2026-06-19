@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000",
   headers: {
     "Content-Type": "application/json",
   },
@@ -30,8 +30,14 @@ export const askRepo = (question: string, repoUrl: string) =>
 export const debugError = (error: string) => API.post("/debug", { error });
 
 /* -------------------------
- FILE EXPLANATION
+ FILE EXPLANATION & BROWSER
 --------------------------*/
+
+export const getFileTree = (repoPath: string) =>
+  API.get("/file/tree", { params: { repoPath } });
+
+export const getFileContent = (filePath: string) =>
+  API.get("/file/content", { params: { filePath } });
 
 export const explainFile = (code: string) =>
   API.post("/file/explain", { code });
@@ -40,8 +46,8 @@ export const explainFile = (code: string) =>
  CODE PARSER
 --------------------------*/
 
-export const analyzeParser = (code: string) =>
-  API.post("/parser/analyze", { code });
+export const analyzeParser = (repoPath: string) =>
+  API.post("/parser/analyze", { repoPath });
 
 /* -------------------------
  DOCUMENTATION GENERATOR

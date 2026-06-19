@@ -6,11 +6,11 @@ export class ParserController {
   constructor(private parserService: ParserService) {}
 
   @Post('analyze')
-  analyze(@Body() body: any) {
-    const ast = this.parserService.parseCode(body.code);
+  analyze(@Body() body: { repoPath: string }) {
+    const metadata = this.parserService.analyzeRepository(body.repoPath);
 
     return {
-      ast,
+      metadata,
     };
   }
 }

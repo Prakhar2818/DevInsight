@@ -1,28 +1,28 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { FaFolder, FaFolderOpen, FaFile, FaChevronRight, FaChevronDown } from "react-icons/fa";
+import React, { useState, useEffect, useMemo } from "react";
+import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
+import { TreeViewBaseItem } from "@mui/x-tree-view/models";
+import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
+import { getFileTree } from "../services/api.service";
 
 interface FileTreeProps {
-  files: string[];
+  files?: string[];
+  repoPath?: string;
+  onFileSelect?: (path: string) => void;
 }
 
-interface TreeNode {
-  name: string;
-  path: string;
-  isFolder: boolean;
-  children: TreeNode[];
-}
+export default function FileTree({ files, repoPath, onFileSelect }: FileTreeProps) {
+  const [treeData, setTreeData] = useState<TreeViewBaseItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-export default function FileTree({ files }: FileTreeProps) {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["src", "backend", "frontend"]));
+  // Build tree from flat array (fallback for Analyzer)
+  const buildTreeFromFlat = useMemo(() => {
+    if (!files) return [];
+    
+    const root: any[] = [];
+    const folderMap = new Map<string, any>();
 
-  // Build tree structure from flat file paths
-  const tree = useMemo(() => {
-    const root: TreeNode[] = [];
-    const folderMap = new Map<string, TreeNode>();
-
-    // Sort files to ensure folders come first
     const sortedFiles = [...files].sort();
 
     for (const filePath of sortedFiles) {
@@ -34,14 +34,10 @@ export default function FileTree({ files }: FileTreeProps) {
         const parentPath = currentPath;
         currentPath = currentPath ? `${currentPath}/${part}` : part;
         
-        const isLast = i === parts.length - 1;
-        const isFolder = !isLast || part.includes(".") === false;
-        
         if (!folderMap.has(currentPath)) {
-          const node: TreeNode = {
-            name: part,
-            path: currentPath,
-            isFolder,
+          const node = {
+            id: currentPath,
+            label: part,
             children: []
           };
           
@@ -58,79 +54,73 @@ export default function FileTree({ files }: FileTreeProps) {
         }
       }
     }
-
+    
+    // Remove empty children arrays
+    const cleanTree = (nodes: any[]) => {
+      for (const node of nodes) {
+        if (node.children.length === 0) delete node.children;
+        else cleanTree(node.children);
+      }
+    };
+    cleanTree(root);
+    
     return root;
   }, [files]);
 
-  const toggleFolder = (path: string) => {
-    setExpandedFolders((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(path)) {
-        newSet.delete(path);
-      } else {
-        newSet.add(path);
-      }
-      return newSet;
-    });
-  };
-
-  const renderNode = (node: TreeNode, depth: number = 0) => {
-    const isExpanded = expandedFolders.has(node.path);
-    const paddingLeft = depth * 16 + 8;
-
-    if (node.isFolder) {
-      return (
-        <div key={node.path}>
-          <div
-            onClick={() => toggleFolder(node.path)}
-            className="flex items-center gap-2 py-1 px-2 hover:bg-[var(--primary-50)] rounded cursor-pointer text-sm text-[var(--foreground)]"
-            style={{ paddingLeft }}
-          >
-            {isExpanded ? (
-              <FaChevronDown className="text-[var(--foreground-secondary)]" size={10} />
-            ) : (
-              <FaChevronRight className="text-[var(--foreground-secondary)]" size={10} />
-            )}
-            {isExpanded ? (
-              <FaFolderOpen className="text-yellow-500" />
-            ) : (
-              <FaFolder className="text-yellow-500" />
-            )}
-            <span className="font-medium">{node.name}</span>
-          </div>
-          {isExpanded && node.children.length > 0 && (
-            <div className="border-l border-[var(--border)] ml-3">
-              {node.children.map((child) => renderNode(child, depth + 1))}
-            </div>
-          )}
-        </div>
-      );
+  useEffect(() => {
+    if (repoPath) {
+      setLoading(true);
+      getFileTree(repoPath)
+        .then(res => {
+          // Backend returns root object { id, label, children }
+          // We wrap it in an array for RichTreeView
+          setTreeData([res.data.tree]);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch tree", err);
+          setLoading(false);
+        });
+    } else if (files) {
+      setTreeData(buildTreeFromFlat);
     }
+  }, [repoPath, files, buildTreeFromFlat]);
 
-    // File
-    return (
-      <div
-        key={node.path}
-        className="flex items-center gap-2 py-1 px-2 hover:bg-[var(--primary-50)] rounded cursor-pointer text-sm text-[var(--foreground)]"
-        style={{ paddingLeft: paddingLeft + 14 }}
-      >
-        <FaFile className="text-[var(--primary-500)]" />
-        <span>{node.name}</span>
-      </div>
-    );
+  const handleItemClick = (event: React.SyntheticEvent, itemId: string) => {
+    if (onFileSelect) {
+      // If it has an extension, treat it as a file (basic heuristic)
+      if (itemId.includes(".")) {
+        // Remove the root prefix if it exists to get the relative file path
+        let relativePath = itemId;
+        if (itemId.startsWith("root/")) {
+          relativePath = itemId.replace("root/", "");
+        }
+        onFileSelect(relativePath);
+      }
+    }
   };
 
   return (
-    <div className="bg-[var(--background-secondary)] rounded-lg border border-[var(--border)] h-[400px] flex flex-col">
-      <div className="sticky top-0 bg-[var(--background-secondary)] border-b border-[var(--border)] p-4 flex-shrink-0">
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
+    <div className="bg-white rounded-xl border border-[var(--border)] h-full flex flex-col shadow-sm">
+      <div className="sticky top-0 bg-[var(--background-secondary)] border-b border-[var(--border)] px-4 py-3 flex-shrink-0 rounded-t-xl">
+        <h3 className="text-sm font-semibold text-[var(--foreground)]">
           File Explorer
         </h3>
-        <p className="text-xs text-[var(--foreground-secondary)]">{files.length} files</p>
       </div>
       <div className="p-2 overflow-auto flex-1">
-        {tree.length > 0 ? (
-          tree.map((node) => renderNode(node))
+        {loading ? (
+           <div className="flex justify-center py-4">
+             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+           </div>
+        ) : treeData.length > 0 ? (
+          <RichTreeView 
+            items={treeData} 
+            onItemClick={handleItemClick}
+            sx={{
+              '& .MuiTreeItem-content': { padding: '4px 8px', borderRadius: '8px' },
+              '& .MuiTreeItem-label': { fontSize: '0.875rem', fontFamily: 'var(--font-inter)' }
+            }}
+          />
         ) : (
           <p className="text-[var(--foreground-secondary)] text-sm p-4">No files to display</p>
         )}
