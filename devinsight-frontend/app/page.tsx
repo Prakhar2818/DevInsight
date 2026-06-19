@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import RepoInput from "@/components/RepoInput"
-import FeatureGrid from "@/components/FeatureGrid"
-import Hero from "@/components/Hero"
-import MotionWrapper from "@/components/MotionWrapper"
+import RepoInput from "@/components/RepoInput";
+import FeatureGrid from "@/components/FeatureGrid";
+import Hero from "@/components/Hero";
+import MotionWrapper from "@/components/MotionWrapper";
 
 export default function Home() {
   return (
@@ -12,11 +12,11 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <MotionWrapper animation="slideUp" delay={0.3}>
-          <RepoInput />
+          {/* <RepoInput /> */}
         </MotionWrapper>
 
         <FeatureGrid />
       </div>
     </main>
-  )
+  );
 }
