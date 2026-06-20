@@ -21,7 +21,6 @@ export default function Sidebar() {
   const navItems = [
     { href: "/dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard" },
     { href: "/workspace", icon: <FolderTree size={20} />, label: "Workspace" },
-    { href: "/analyzer", icon: <SearchCode size={20} />, label: "Analyzer" },
     { href: "/chat", icon: <MessageSquare size={20} />, label: "AI Chat" },
     { href: "/debug", icon: <Bug size={20} />, label: "Debug Assistant" },
     { href: "/tracer", icon: <GitMerge size={20} />, label: "Flow Tracer" },

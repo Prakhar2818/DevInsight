@@ -26,6 +26,14 @@ export default function RepoInput() {
         files: res.data.files || [],
       };
       
+      // Save to allRepoStructures dictionary to support multiple repos
+      const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
+      let allStructures = {};
+      try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
+      allStructures[url] = dataToSave;
+      localStorage.setItem("allRepoStructures", JSON.stringify(allStructures));
+
+      // Keep legacy for fallback
       localStorage.setItem("repoStructure", JSON.stringify(dataToSave));
       localStorage.setItem("repoUrl", url);
 
@@ -39,7 +47,7 @@ export default function RepoInput() {
         localStorage.setItem("repoHistory", JSON.stringify(history));
       }
 
-      router.push("/analyzer");
+      router.push(`/workspace?url=${encodeURIComponent(url)}`);
     } catch (error) {
       console.error("Analysis failed:", error);
     } finally {

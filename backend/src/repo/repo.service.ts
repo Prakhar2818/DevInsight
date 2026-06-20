@@ -6,13 +6,14 @@ import { LlmService } from '../ai/llm.service';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Repo } from '../schema/repo.schema';
+import { ChatSession } from '../schema/chat.schema';
 
 @Injectable()
 export class RepoService {
   constructor(
     private llmService: LlmService,
-    @InjectModel(Repo.name)
-    private repoModel: Model<Repo>,
+    @InjectModel(Repo.name) private repoModel: Model<Repo>,
+    @InjectModel(ChatSession.name) private chatModel: Model<ChatSession>,
   ) {}
 
   private git = simpleGit();
@@ -86,13 +87,12 @@ export class RepoService {
         });
       }
     }
-
     return items;
   }
 
   // Flatten the directory tree for FileTree component
-  flattenFiles(dir: string, relativePath: string = ''): string[] {
-    const files: string[] = [];
+  flattenFiles(dir: string, relativePath: string = ''): any[] {
+    const files: any[] = [];
     const items = fs.readdirSync(dir);
 
     // Filter out node_modules, .git, and other hidden folders
@@ -106,21 +106,85 @@ export class RepoService {
       if (stat.isDirectory()) {
         files.push(...this.flattenFiles(fullPath, itemRelativePath));
       } else {
-        files.push(itemRelativePath);
+        files.push({
+          name: item,
+          path: itemRelativePath,
+          type: 'file'
+        });
       }
     }
 
     return files;
   }
 
-  async askQuestion(structure: any, question: string) {
+  async getChatHistory(userId: string, repoUrl: string, filePath?: string) {
+    const query: any = { userId, repoUrl };
+    if (filePath) {
+      query.filePath = filePath;
+    } else {
+      query.$or = [{ filePath: null }, { filePath: { $exists: false } }, { filePath: "" }];
+    }
+    const session = await this.chatModel.findOne(query);
+    return session ? session.messages : [];
+  }
+
+  async getUserRepos(userId: string | null) {
+    const query = userId ? { $or: [{ userId }, { userId: null }] } : { userId: null };
+    const repos = await this.repoModel.find(query as any).select('repoUrl framework architecture analysis -_id');
+    return repos;
+  }
+
+  async askQuestion(structure: any, question: string, repoUrl?: string, selectedFile?: string, userId?: string) {
+    let fileContext = '';
+
+    if (repoUrl && selectedFile) {
+      try {
+        const repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'repo';
+        const fullPath = path.join(process.cwd(), 'repos', repoName, selectedFile);
+        
+        if (fs.existsSync(fullPath)) {
+          const content = fs.readFileSync(fullPath, 'utf8');
+          fileContext = `\nContext File (${selectedFile}):\n\`\`\`\n${content.substring(0, 2000)}\n\`\`\`\n`;
+        }
+      } catch (e) {
+        console.error("Failed to read context file", e);
+      }
+    }
+
+    // Get Chat History
+    let chatSession: any = null;
+    let chatHistoryContext = '';
+    if (userId && repoUrl) {
+      const query: any = { userId, repoUrl };
+      if (selectedFile) {
+        query.filePath = selectedFile;
+      } else {
+        query.$or = [{ filePath: null }, { filePath: { $exists: false } }, { filePath: "" }];
+      }
+      
+      chatSession = await this.chatModel.findOne(query);
+      if (!chatSession) {
+        chatSession = new this.chatModel({ 
+          userId, 
+          repoUrl, 
+          filePath: selectedFile || null,
+          messages: [] 
+        });
+      }
+      chatSession.messages.push({ role: 'user', content: question });
+      
+      if (chatSession.messages.length > 1) {
+        const historyText = chatSession.messages.slice(-6, -1).map(m => `${m.role}: ${m.content}`).join('\n');
+        chatHistoryContext = `\nRecent Chat History:\n${historyText}\n`;
+      }
+    }
+
     const prompt = `
 You are a senior software engineer.
 
 Answer the question about this repository.
-
-Repository Structure:
-${JSON.stringify(structure)}
+${fileContext ? fileContext : `\nRepository Structure:\n${JSON.stringify(structure).substring(0, 2000)}\n`}
+${chatHistoryContext}
 
 Question:
 ${question}
@@ -128,21 +192,30 @@ ${question}
 
     const answer = await this.llmService.explainRepoStructure(prompt);
 
+    if (chatSession) {
+      chatSession.messages.push({ role: 'ai', content: answer });
+      await chatSession.save();
+    }
+
     return answer;
   }
 
-  async repoIntelligence(repoUrl: string, structure: any) {
-    // 1️⃣ Check database cache
-    const existingRepo = await this.getRepo(repoUrl);
+  async getRepo(repoUrl: string, userId?: string) {
+    const query: any = { repoUrl };
+    if (userId) query.userId = userId;
+    return this.repoModel.findOne(query as any).exec();
+  }
 
-    if (existingRepo) {
+  async repoIntelligence(repoUrl: string, structure: any, userId?: string) {
+    const existingRepo = await this.getRepo(repoUrl, userId);
+
+    if (existingRepo && existingRepo.analysis) {
       return {
         source: 'database',
         analysis: existingRepo.analysis,
       };
     }
 
-    // 2️⃣ Generate AI analysis
     const prompt = `
 You are a software architect.
 
@@ -157,34 +230,27 @@ Repository Structure:
 ${JSON.stringify(structure, null, 2)}
 `;
 
-// test 
+    const analysis = await this.llmService.explainRepoStructure(prompt);
 
-    const response = await this.llmService.explainRepoStructure(prompt);
+    const query: any = { repoUrl };
+    if (userId) query.userId = userId;
 
-    // 3️⃣ Save result to database
-    await this.saveRepo({
-      repoUrl,
-      structure,
-      analysis: response,
-    });
+    await this.repoModel.findOneAndUpdate(
+      query,
+      {
+        $set: {
+          repoUrl,
+          userId,
+          structure: JSON.stringify(structure),
+          analysis,
+        }
+      },
+      { new: true, upsert: true }
+    );
 
     return {
       source: 'ai',
-      analysis: response,
+      analysis,
     };
-  }
-
-  async saveRepo(data: any) {
-    const repoData = {
-      ...data,
-      structure: JSON.stringify(data.structure),
-    };
-    const repo = new this.repoModel(repoData);
-
-    return repo.save();
-  }
-
-  async getRepo(repoUrl: string) {
-    return this.repoModel.findOne({ repoUrl });
   }
 }

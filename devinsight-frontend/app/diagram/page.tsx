@@ -11,9 +11,21 @@ export default function DiagramPage() {
 
   const generate = async () => {
 
-    const structure = JSON.parse(
-      localStorage.getItem("repoStructure") || "{}"
-    )
+    const url = localStorage.getItem("repoUrl") || "";
+    const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
+    let allStructures = {};
+    try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
+
+    let structure = {};
+    if (allStructures[url]) {
+      structure = allStructures[url].structure || allStructures[url];
+    } else {
+      const structureRaw = localStorage.getItem("repoStructure");
+      if (structureRaw) {
+        const parsed = JSON.parse(structureRaw);
+        structure = parsed.structure || parsed;
+      }
+    }
 
     const res = await generateDiagram(structure)
 

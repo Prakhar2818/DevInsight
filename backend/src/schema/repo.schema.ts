@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+import { User } from './user.schema';
 
 export type RepoDocument = Repo & Document;
 
@@ -7,6 +8,9 @@ export type RepoDocument = Repo & Document;
 export class Repo {
   @Prop()
   repoUrl: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  userId: User;
 
   @Prop()
   framework: string;

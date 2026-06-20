@@ -2,10 +2,16 @@ import {
   Body,
   Controller,
   Post,
+  Get,
+  Param,
+  Query,
+  Request,
+  UseGuards,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { RepoService } from './repo.service';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 
 @Controller('repo')
 export class RepoController {
@@ -24,7 +30,6 @@ export class RepoController {
       );
     }
 
-    // Clean the URL if it has extra quotes
     const cleanUrl = repoUrl.replace(/^"+|"+$/g, '');
 
     try {
@@ -37,11 +42,7 @@ export class RepoController {
     }
 
     const repoPath = await this.repoService.cloneRepo(cleanUrl);
-
-    // Get flat list of all files for FileTree
     const files = this.repoService.flattenFiles(repoPath);
-    
-    // Get nested structure for analysis
     const structure = this.repoService.readDirectoryRecursive(repoPath);
 
     return {
@@ -52,9 +53,22 @@ export class RepoController {
     };
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get('history')
+  async getUserHistory(@Request() req: any) {
+    const userId = req.user && !req.user.isGuest 
+      ? (req.user.userId || req.user._id || req.user.email || null) 
+      : null;
+    console.log("getUserHistory called. req.user:", req.user, "userId:", userId);
+    const repos = await this.repoService.getUserRepos(userId);
+    console.log("getUserRepos returned:", repos.length, "repos");
+    return repos;
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('ask')
-  async askQuestion(@Body() body: any) {
-    const { structure, question } = body;
+  async askQuestion(@Request() req: any, @Body() body: any) {
+    const { structure, question, repoUrl, selectedFile } = body;
 
     if (!structure || !question) {
       throw new HttpException(
@@ -63,15 +77,29 @@ export class RepoController {
       );
     }
 
-    const answer = await this.repoService.askQuestion(structure, question);
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.email) : null;
+    const answer = await this.repoService.askQuestion(structure, question, repoUrl, selectedFile, userId);
 
-    return {
-      answer,
-    };
+    return { answer };
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get('chat/:repoUrlEncoded')
+  async getChatHistoryUrl(
+    @Request() req: any, 
+    @Param('repoUrlEncoded') repoUrlEncoded: string,
+    @Query('filePath') filePath?: string
+  ) {
+    if (!req.user) return { history: [] };
+    const userId = req.user.userId || req.user._id || req.user.email;
+    const repoUrl = decodeURIComponent(repoUrlEncoded);
+    const history = await this.repoService.getChatHistory(userId, repoUrl, filePath);
+    return { history };
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('intelligence')
-  async analyzeRepoIntelligence(@Body() body: any) {
+  async analyzeRepoIntelligence(@Request() req: any, @Body() body: any) {
     const { repoUrl, structure } = body;
 
     if (!repoUrl || !structure) {
@@ -81,10 +109,9 @@ export class RepoController {
       );
     }
 
-    const result = await this.repoService.repoIntelligence(repoUrl, structure);
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.email) : null;
+    const result = await this.repoService.repoIntelligence(repoUrl, structure, userId);
 
-    return {
-      result,
-    };
+    return { result };
   }
 }

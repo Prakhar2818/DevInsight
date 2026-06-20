@@ -7,6 +7,16 @@ const API = axios.create({
   },
 });
 
+API.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 /* -------------------------
  REPOSITORY ANALYSIS
 --------------------------*/
@@ -20,8 +30,31 @@ export const repoIntelligence = (repoData: any) =>
     structure: repoData.structure || repoData 
   });
 
-export const askRepo = (question: string, repoUrl: string) =>
-  API.post("/repo/ask", { question, repoUrl });
+export const askRepo = (question: string, repoUrl: string, selectedFile?: string) => {
+  const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
+  let allStructures = {};
+  try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
+
+  let structure = {};
+  if (allStructures[repoUrl]) {
+    structure = allStructures[repoUrl].structure || allStructures[repoUrl];
+  } else {
+    const structureRaw = localStorage.getItem("repoStructure");
+    if (structureRaw) {
+      const parsed = JSON.parse(structureRaw);
+      structure = parsed.structure || parsed;
+    }
+  }
+  return API.post("/repo/ask", { question, repoUrl, selectedFile, structure });
+};
+
+export const getRepoHistory = () => 
+  API.get("/repo/history");
+
+export const getChatHistory = (repoUrl: string, filePath?: string) => {
+  const url = `/repo/chat/${encodeURIComponent(repoUrl)}`;
+  return filePath ? API.get(`${url}?filePath=${encodeURIComponent(filePath)}`) : API.get(url);
+};
 
 /* -------------------------
  DEBUG ASSISTANT
