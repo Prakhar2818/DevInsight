@@ -10,6 +10,9 @@ export class ErrorPattern {
 
   @Prop()
   solution: string;
+
+  @Prop({ type: [String], default: [] })
+  userIds: string[];
 }
 
 export const ErrorPatternSchema = SchemaFactory.createForClass(ErrorPattern);

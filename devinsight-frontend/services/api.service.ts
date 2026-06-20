@@ -62,6 +62,8 @@ export const getChatHistory = (repoUrl: string, filePath?: string) => {
 
 export const debugError = (error: string) => API.post("/debug", { error });
 
+export const getDebugHistory = () => API.get("/debug/history");
+
 /* -------------------------
  FILE EXPLANATION & BROWSER
 --------------------------*/

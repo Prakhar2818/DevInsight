@@ -14,13 +14,22 @@ export class DebugService {
     private errorModel: Model<ErrorPattern>,
   ) {}
 
-  async analyzeError(error: string) {
+  async analyzeError(error: string, userId?: string) {
+    // Escape special regex characters in the error string to prevent MongoServerError
+    const escapedError = error.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
     // 1️⃣ Check database
     const existingError = await this.errorModel.findOne({
-      error: { $regex: error, $options: 'i' },
+      error: { $regex: escapedError, $options: 'i' },
     });
 
     if (existingError) {
+      if (userId && (!existingError.userIds || !existingError.userIds.includes(userId))) {
+        if (!existingError.userIds) existingError.userIds = [];
+        existingError.userIds.push(userId);
+        existingError.markModified('userIds');
+        await existingError.save();
+      }
       return {
         source: 'database',
         cause: existingError.cause,
@@ -36,6 +45,7 @@ export class DebugService {
       error: error,
       cause: 'Analyzed by AI',
       solution: aiResult,
+      userIds: userId ? [userId] : [],
     });
     await newErrorPattern.save();
 
@@ -43,5 +53,16 @@ export class DebugService {
       source: 'ai',
       analysis: aiResult,
     };
+  }
+
+  async getHistory(userId?: string) {
+    if (userId) {
+      const personalHistory = await this.errorModel.find({ userIds: userId }).sort({ _id: -1 }).limit(20);
+      if (personalHistory && personalHistory.length > 0) {
+        return personalHistory;
+      }
+    }
+    // Fallback to global history if personal history is empty or user is guest
+    return this.errorModel.find().sort({ _id: -1 }).limit(10);
   }
 }
