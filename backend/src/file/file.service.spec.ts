@@ -8,7 +8,7 @@ jest.mock('fs');
 
 describe('FileService', () => {
   let service: FileService;
-  let mockLlmService = {
+  const mockLlmService = {
     explainCode: jest.fn(),
   };
 

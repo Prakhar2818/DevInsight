@@ -17,14 +17,17 @@ export class DebugService {
   async analyzeError(error: string, userId?: string) {
     // Escape special regex characters in the error string to prevent MongoServerError
     const escapedError = error.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    
+
     // 1️⃣ Check database
     const existingError = await this.errorModel.findOne({
       error: { $regex: escapedError, $options: 'i' },
     });
 
     if (existingError) {
-      if (userId && (!existingError.userIds || !existingError.userIds.includes(userId))) {
+      if (
+        userId &&
+        (!existingError.userIds || !existingError.userIds.includes(userId))
+      ) {
         if (!existingError.userIds) existingError.userIds = [];
         existingError.userIds.push(userId);
         existingError.markModified('userIds');
@@ -57,7 +60,10 @@ export class DebugService {
 
   async getHistory(userId?: string) {
     if (userId) {
-      const personalHistory = await this.errorModel.find({ userIds: userId }).sort({ _id: -1 }).limit(20);
+      const personalHistory = await this.errorModel
+        .find({ userIds: userId })
+        .sort({ _id: -1 })
+        .limit(20);
       if (personalHistory && personalHistory.length > 0) {
         return personalHistory;
       }

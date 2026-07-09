@@ -40,12 +40,16 @@ describe('AuthService', () => {
   it('should throw ConflictException if user exists on register', async () => {
     usersService.findByEmail.mockResolvedValue({ id: '1' } as any);
 
-    await expect(authService.register({ email: 'test@example.com' })).rejects.toThrow(ConflictException);
+    await expect(
+      authService.register({ email: 'test@example.com' }),
+    ).rejects.toThrow(ConflictException);
   });
 
   it('should throw UnauthorizedException on invalid login', async () => {
     usersService.findByEmail.mockResolvedValue(null);
 
-    await expect(authService.login({ email: 'wrong', password: '123' })).rejects.toThrow(UnauthorizedException);
+    await expect(
+      authService.login({ email: 'wrong', password: '123' }),
+    ).rejects.toThrow(UnauthorizedException);
   });
 });

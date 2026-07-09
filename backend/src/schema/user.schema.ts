@@ -20,6 +20,12 @@ export class User {
   @Prop({ default: 'local' })
   provider: string;
 
+  @Prop()
+  githubId?: string;
+
+  @Prop()
+  githubToken?: string;
+
   @Prop({ default: 'user' })
   role: string;
 }

@@ -15,4 +15,12 @@ export class UsersService {
   async findByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).exec();
   }
+
+  async findByGithubId(githubId: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ githubId }).exec();
+  }
+
+  async update(id: string, updateData: any): Promise<UserDocument | null> {
+    return this.userModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+  }
 }

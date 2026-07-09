@@ -7,6 +7,9 @@ import CodeViewer from "@/components/CodeViewer";
 import ChatAssistant from "@/components/ChatAssistant";
 import RepoInput from "@/components/RepoInput";
 import AnalysisLoader from "@/components/AnalysisLoader";
+import TracerViewer from "@/components/TracerViewer";
+import DiagramViewer from "@/components/DiagramViewer";
+import DocsGenerator from "@/components/DocsGenerator";
 import { MessageSquare } from "lucide-react";
 import { analyzeParser, repoIntelligence } from "../../services/api.service";
 
@@ -19,10 +22,16 @@ export default function Workspace() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [parsedStructureState, setParsedStructureState] = useState<any>(null);
+  const [diagramCode, setDiagramCode] = useState<string>("");
+  const [diagramLoading, setDiagramLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
 
+  const [viewMode, setViewMode] = useState<'code' | 'overview' | 'tracer' | 'diagram' | 'docs'>('overview');
+
   useEffect(() => {
+    // ... logic remains
     const searchParams = new URLSearchParams(window.location.search);
     const urlParam = searchParams.get('url');
     const storedUrl = urlParam || localStorage.getItem("repoUrl") || "";
@@ -51,8 +60,10 @@ export default function Workspace() {
       }
 
       if (parsedStructure) {
+        setParsedStructureState(parsedStructure);
         setLoading(true);
         setAiLoading(true);
+        setDiagramLoading(true);
 
         analyzeParser(path).then((res) => {
           setMetadata(res.data.metadata);
@@ -97,9 +108,14 @@ export default function Workspace() {
     window.location.href = `/workspace?url=${encodeURIComponent(url)}`;
   };
 
+  const handleFileSelect = (path: string) => {
+    setSelectedFilePath(path);
+    setViewMode('code');
+  };
+
   return (
     <DashboardLayout>
-      <div className="h-[calc(100vh-80px)] p-6 flex flex-col relative">
+      <div className="h-full flex flex-col relative">
         <div className="mb-4 flex-shrink-0 flex justify-between items-end">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)] mb-2">Workspace</h1>
@@ -122,17 +138,33 @@ export default function Workspace() {
               </div>
             )}
             
-            {selectedFilePath && (
-              <button 
-                onClick={() => setIsAnalysisModalOpen(true)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                See Full Analysis
-              </button>
-            )}
+            <button 
+              onClick={() => { setViewMode('overview'); }}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors shadow-sm ${viewMode === 'overview' ? 'bg-[#38bdf8] text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            >
+              Overview
+            </button>
+
+            <button 
+              onClick={() => { setViewMode('tracer'); }}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors shadow-sm ${viewMode === 'tracer' ? 'bg-[#8b5cf6] text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            >
+              Flow Tracer
+            </button>
+
+            <button 
+              onClick={() => { setViewMode('diagram'); }}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors shadow-sm ${viewMode === 'diagram' ? 'bg-[#10b981] text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            >
+              Architecture Diagram
+            </button>
+
+            <button 
+              onClick={() => { setViewMode('docs'); }}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors shadow-sm ${viewMode === 'docs' ? 'bg-[#f59e0b] text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            >
+              Documentation
+            </button>
 
             <button 
               onClick={() => setIsChatOpen(!isChatOpen)}
@@ -156,14 +188,26 @@ export default function Workspace() {
             <div className="w-80 flex-shrink-0">
               <FileTree 
                 repoPath={repoPath} 
-                onFileSelect={(path) => setSelectedFilePath(path)} 
+                onFileSelect={handleFileSelect} 
               />
             </div>
 
-            {/* Main: Code Viewer or Architecture Overview */}
+            {/* Main: Code Viewer, Tracer, or Architecture Overview */}
             <div className="flex-1 min-w-0 pr-0 overflow-y-auto custom-scrollbar">
-              {selectedFilePath ? (
+              {viewMode === 'code' && selectedFilePath ? (
                 <CodeViewer repoPath={repoPath} filePath={selectedFilePath} />
+              ) : viewMode === 'tracer' ? (
+                <TracerViewer 
+                  repoContext={parsedStructureState ? JSON.stringify(parsedStructureState) : aiAnalysis || ""} 
+                  selectedFilePath={selectedFilePath}
+                />
+              ) : viewMode === 'diagram' ? (
+                <DiagramViewer 
+                  repoUrl={repoUrl} 
+                  repoContext={parsedStructureState ? JSON.stringify(parsedStructureState) : aiAnalysis || ""}
+                />
+              ) : viewMode === 'docs' ? (
+                <DocsGenerator parsedStructure={parsedStructureState} />
               ) : (
                 <div className="flex flex-col gap-6">
                   {/* Metadata Grid */}
@@ -211,7 +255,7 @@ export default function Workspace() {
                           {aiAnalysis}
                         </div>
                       ) : (
-                        <p className="text-slate-500 italic">Select a file from the explorer to view its contents, or wait for the architectural analysis to generate.</p>
+                        <p className="text-slate-500 italic">Wait for the architectural analysis to generate.</p>
                       )}
                     </div>
                   </div>

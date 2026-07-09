@@ -5,13 +5,15 @@ import { AiModule } from '../ai/ai.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Repo, RepoSchema } from '../schema/repo.schema';
 import { ChatSession, ChatSessionSchema } from '../schema/chat.schema';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     AiModule,
+    UsersModule,
     MongooseModule.forFeature([
       { name: Repo.name, schema: RepoSchema },
-      { name: ChatSession.name, schema: ChatSessionSchema }
+      { name: ChatSession.name, schema: ChatSessionSchema },
     ]),
   ],
   controllers: [RepoController],

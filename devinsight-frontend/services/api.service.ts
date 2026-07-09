@@ -64,6 +64,9 @@ export const debugError = (error: string) => API.post("/debug", { error });
 
 export const getDebugHistory = () => API.get("/debug/history");
 
+// Tracer APIs
+export const traceFlow = (query: string, context: string) => API.post("/tracer/flow", { query, context });
+
 /* -------------------------
  FILE EXPLANATION & BROWSER
 --------------------------*/
@@ -88,12 +91,12 @@ export const analyzeParser = (repoPath: string) =>
  DOCUMENTATION GENERATOR
 --------------------------*/
 
-export const generateDocs = (repoUrl: string) =>
-  API.post("/docs/generate", { repoUrl });
+export const generateDocs = (structure: any) =>
+  API.post("/docs/generate", { structure });
 
 /* -------------------------
  DIAGRAM GENERATOR
 --------------------------*/
 
-export const generateDiagram = (structure: any) =>
-  API.post("/diagram/generate", { structure });
+export const generateDiagram = (repoUrl: string, structure: any, diagramType: string = 'architecture') =>
+  API.post("/diagram/generate", { repoUrl, structure, diagramType });

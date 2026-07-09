@@ -14,7 +14,10 @@ export class FileService {
 
   getDirectoryTree(dirPath: string, rootId: string = 'root') {
     if (!fs.existsSync(dirPath)) {
-      throw new HttpException('Repository path not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Repository path not found',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const buildTree = (currentPath: string, idPrefix: string) => {
@@ -23,10 +26,13 @@ export class FileService {
       const id = idPrefix;
 
       if (stats.isDirectory()) {
-        const children = fs.readdirSync(currentPath)
-          .filter(file => !file.startsWith('.') && file !== 'node_modules')
-          .map(file => buildTree(path.join(currentPath, file), `${idPrefix}/${file}`));
-        
+        const children = fs
+          .readdirSync(currentPath)
+          .filter((file) => !file.startsWith('.') && file !== 'node_modules')
+          .map((file) =>
+            buildTree(path.join(currentPath, file), `${idPrefix}/${file}`),
+          );
+
         return { id, label: name, children };
       }
 

@@ -22,7 +22,9 @@ export class DebugController {
       throw new HttpException('error field required', HttpStatus.BAD_REQUEST);
     }
 
-    const userId = req.user ? (req.user.userId || req.user._id || req.user.email) : null;
+    const userId = req.user
+      ? req.user.userId || req.user._id || req.user.email
+      : null;
     const result = await this.debugService.analyzeError(body.error, userId);
 
     return result;
@@ -31,7 +33,9 @@ export class DebugController {
   @UseGuards(OptionalJwtAuthGuard)
   @Get('history')
   async getDebugHistory(@Request() req: any) {
-    const userId = req.user ? (req.user.userId || req.user._id || req.user.email) : null;
+    const userId = req.user
+      ? req.user.userId || req.user._id || req.user.email
+      : null;
     return this.debugService.getHistory(userId);
   }
 }

@@ -1,17 +1,18 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
+import { join } from 'path';
 
 async function bootstrap() {
   try {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+    // Serve static files (like generated DOCX files) from the 'public' directory
+    app.useStaticAssets(join(process.cwd(), 'public'));
 
     app.enableCors({
-      origin: [
-        'http://localhost:3000',
-        'https://devinsight-bm7.pages.dev',
-
-      ],
+      origin: ['http://localhost:3000', 'https://devinsight-bm7.pages.dev'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       credentials: true,
     });

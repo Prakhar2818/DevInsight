@@ -10,7 +10,7 @@ export class ParserService {
   parseCode(code: string) {
     const ast = parse(code, {
       sourceType: 'module',
-      plugins: ['typescript']
+      plugins: ['typescript'],
     });
 
     return ast;
@@ -35,7 +35,13 @@ export class ParserService {
         try {
           const files = fs.readdirSync(dir);
           for (const file of files) {
-            if (file === 'node_modules' || file === '.git' || file === 'dist' || file === 'build') continue;
+            if (
+              file === 'node_modules' ||
+              file === '.git' ||
+              file === 'dist' ||
+              file === 'build'
+            )
+              continue;
             const filePath = path.join(dir, file);
             try {
               if (fs.statSync(filePath).isDirectory()) {
@@ -54,8 +60,8 @@ export class ParserService {
       };
 
       const packageJsonPaths = getAllPackageJsons(repoPath);
-      console.log("Found package.json paths:", packageJsonPaths);
-      
+      console.log('Found package.json paths:', packageJsonPaths);
+
       if (packageJsonPaths.length > 0) {
         metadata.packageManager = 'npm/yarn';
         const allDeps: Record<string, string> = {};
@@ -67,7 +73,7 @@ export class ParserService {
             Object.assign(allDeps, pkg.devDependencies || {});
           } catch (e) {}
         }
-        console.log("All deps keys:", Object.keys(allDeps));
+        console.log('All deps keys:', Object.keys(allDeps));
 
         // Framework Detection
         if (allDeps['@nestjs/core']) metadata.framework = 'NestJS';
@@ -83,16 +89,23 @@ export class ParserService {
         else metadata.language = 'JavaScript';
 
         // Database Detection
-        if (allDeps['pg'] || allDeps['postgres']) metadata.database = 'PostgreSQL';
-        else if (allDeps['mongoose'] || allDeps['mongodb']) metadata.database = 'MongoDB';
-        else if (allDeps['mysql'] || allDeps['mysql2']) metadata.database = 'MySQL';
+        if (allDeps['pg'] || allDeps['postgres'])
+          metadata.database = 'PostgreSQL';
+        else if (allDeps['mongoose'] || allDeps['mongodb'])
+          metadata.database = 'MongoDB';
+        else if (allDeps['mysql'] || allDeps['mysql2'])
+          metadata.database = 'MySQL';
         else if (allDeps['sqlite3']) metadata.database = 'SQLite';
-        else if (allDeps['@clickhouse/client']) metadata.database = 'ClickHouse';
-        else if (allDeps['ioredis'] || allDeps['redis']) metadata.database = 'Redis';
-        else if (allDeps['@prisma/client']) metadata.database = 'SQL (via Prisma)';
+        else if (allDeps['@clickhouse/client'])
+          metadata.database = 'ClickHouse';
+        else if (allDeps['ioredis'] || allDeps['redis'])
+          metadata.database = 'Redis';
+        else if (allDeps['@prisma/client'])
+          metadata.database = 'SQL (via Prisma)';
 
         // ORM Detection
-        if (allDeps['@prisma/client'] || allDeps['prisma']) metadata.orm = 'Prisma';
+        if (allDeps['@prisma/client'] || allDeps['prisma'])
+          metadata.orm = 'Prisma';
         else if (allDeps['typeorm']) metadata.orm = 'TypeORM';
         else if (allDeps['mongoose']) metadata.orm = 'Mongoose';
         else if (allDeps['sequelize']) metadata.orm = 'Sequelize';
@@ -102,10 +115,12 @@ export class ParserService {
       if (fs.existsSync(path.join(repoPath, '.env.example'))) {
         metadata.hasEnvExample = true;
       }
-      if (fs.existsSync(path.join(repoPath, 'docker-compose.yml')) || fs.existsSync(path.join(repoPath, 'docker-compose.yaml'))) {
+      if (
+        fs.existsSync(path.join(repoPath, 'docker-compose.yml')) ||
+        fs.existsSync(path.join(repoPath, 'docker-compose.yaml'))
+      ) {
         metadata.hasDockerCompose = true;
       }
-
     } catch (error) {
       this.logger.error(`Error analyzing repository: ${error.message}`);
     }

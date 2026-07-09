@@ -48,6 +48,11 @@ export default function Navbar() {
     router.push("/login");
   };
 
+  // Hide entirely on Dashboard and Workspace for minimalism
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/workspace")) {
+    return null;
+  }
+
   return (
     <nav className={navClasses}>
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">

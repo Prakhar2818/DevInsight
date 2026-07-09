@@ -1,13 +1,15 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Res, UseGuards } from '@nestjs/common';
 import { DocsService } from './docs.service';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 
 @Controller('docs')
 export class DocsController {
   constructor(private docsService: DocsService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('generate')
-  generate(@Body() body: any) {
-    const text = body?.content || body?.text || body?.repoUrl;
-    return this.docsService.generateDoc(text);
+  async generateDocs(@Body('structure') structure: any) {
+    const result = await this.docsService.generateDoc(structure);
+    return { data: result };
   }
 }

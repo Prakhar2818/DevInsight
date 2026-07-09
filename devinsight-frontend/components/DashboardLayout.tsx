@@ -2,13 +2,11 @@ import Sidebar from "./Sidebar";
 
 export default function DashboardLayout({ children }: any) {
   return (
-    <div className="flex min-h-screen pt-16">
+    <div className="flex h-screen overflow-hidden bg-[var(--background)]">
       <Sidebar />
 
-      <div className="flex-1 bg-[var(--background)] p-6 overflow-y-auto">
-        <div className="h-[calc(100vh-64px-48px)]">
-          {children}
-        </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        {children}
       </div>
     </div>
   );

@@ -25,7 +25,10 @@ export class Repo {
   analysis: string;
 
   @Prop()
-  diagram: string;
+  diagram: string; // Legacy
+
+  @Prop({ type: Object, default: {} })
+  diagrams: any;
 }
 
 export const RepoSchema = SchemaFactory.createForClass(Repo);

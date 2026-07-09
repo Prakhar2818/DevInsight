@@ -62,8 +62,22 @@ export class RepoService {
     const items: any[] = [];
     const files = fs.readdirSync(dir);
 
-    // Filter out node_modules, .git, and other hidden folders
-    const filteredFiles = files.filter(file => !file.startsWith('.') && file !== 'node_modules');
+    // Filter out node_modules, .git, and other hidden/build folders
+    const ignoredFolders = new Set([
+      'node_modules',
+      '.git',
+      'dist',
+      'build',
+      '.next',
+      'out',
+      'coverage',
+      '.cache',
+      'vendor',
+      '.svelte-kit',
+    ]);
+    const filteredFiles = files.filter(
+      (file) => !ignoredFolders.has(file) && !file.startsWith('.'),
+    );
 
     for (const file of filteredFiles) {
       const fullPath = path.join(dir, file);
@@ -72,12 +86,15 @@ export class RepoService {
 
       if (stat.isDirectory()) {
         // For directories, recursively get contents
-        const children = this.readDirectoryRecursive(fullPath, fileRelativePath);
+        const children = this.readDirectoryRecursive(
+          fullPath,
+          fileRelativePath,
+        );
         items.push({
           name: file,
           type: 'folder',
           path: fileRelativePath,
-          children: children.length > 0 ? children : []
+          children: children.length > 0 ? children : [],
         });
       } else {
         items.push({
@@ -95,8 +112,22 @@ export class RepoService {
     const files: any[] = [];
     const items = fs.readdirSync(dir);
 
-    // Filter out node_modules, .git, and other hidden folders
-    const filteredItems = items.filter(item => !item.startsWith('.') && item !== 'node_modules');
+    // Filter out node_modules, .git, and other hidden/build folders
+    const ignoredFolders = new Set([
+      'node_modules',
+      '.git',
+      'dist',
+      'build',
+      '.next',
+      'out',
+      'coverage',
+      '.cache',
+      'vendor',
+      '.svelte-kit',
+    ]);
+    const filteredItems = items.filter(
+      (item) => !ignoredFolders.has(item) && !item.startsWith('.'),
+    );
 
     for (const item of filteredItems) {
       const fullPath = path.join(dir, item);
@@ -109,7 +140,7 @@ export class RepoService {
         files.push({
           name: item,
           path: itemRelativePath,
-          type: 'file'
+          type: 'file',
         });
       }
     }
@@ -122,32 +153,52 @@ export class RepoService {
     if (filePath) {
       query.filePath = filePath;
     } else {
-      query.$or = [{ filePath: null }, { filePath: { $exists: false } }, { filePath: "" }];
+      query.$or = [
+        { filePath: null },
+        { filePath: { $exists: false } },
+        { filePath: '' },
+      ];
     }
     const session = await this.chatModel.findOne(query);
     return session ? session.messages : [];
   }
 
   async getUserRepos(userId: string | null) {
-    const query = userId ? { $or: [{ userId }, { userId: null }] } : { userId: null };
-    const repos = await this.repoModel.find(query as any).select('repoUrl framework architecture analysis -_id');
+    const query = userId
+      ? { $or: [{ userId }, { userId: null }] }
+      : { userId: null };
+    const repos = await this.repoModel
+      .find(query as any)
+      .select('repoUrl framework architecture analysis -_id');
     return repos;
   }
 
-  async askQuestion(structure: any, question: string, repoUrl?: string, selectedFile?: string, userId?: string) {
+  async askQuestion(
+    structure: any,
+    question: string,
+    repoUrl?: string,
+    selectedFile?: string,
+    userId?: string,
+  ) {
     let fileContext = '';
 
     if (repoUrl && selectedFile) {
       try {
-        const repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'repo';
-        const fullPath = path.join(process.cwd(), 'repos', repoName, selectedFile);
-        
+        const repoName =
+          repoUrl.split('/').pop()?.replace('.git', '') || 'repo';
+        const fullPath = path.join(
+          process.cwd(),
+          'repos',
+          repoName,
+          selectedFile,
+        );
+
         if (fs.existsSync(fullPath)) {
           const content = fs.readFileSync(fullPath, 'utf8');
           fileContext = `\nContext File (${selectedFile}):\n\`\`\`\n${content.substring(0, 2000)}\n\`\`\`\n`;
         }
       } catch (e) {
-        console.error("Failed to read context file", e);
+        console.error('Failed to read context file', e);
       }
     }
 
@@ -159,22 +210,29 @@ export class RepoService {
       if (selectedFile) {
         query.filePath = selectedFile;
       } else {
-        query.$or = [{ filePath: null }, { filePath: { $exists: false } }, { filePath: "" }];
+        query.$or = [
+          { filePath: null },
+          { filePath: { $exists: false } },
+          { filePath: '' },
+        ];
       }
-      
+
       chatSession = await this.chatModel.findOne(query);
       if (!chatSession) {
-        chatSession = new this.chatModel({ 
-          userId, 
-          repoUrl, 
+        chatSession = new this.chatModel({
+          userId,
+          repoUrl,
           filePath: selectedFile || null,
-          messages: [] 
+          messages: [],
         });
       }
       chatSession.messages.push({ role: 'user', content: question });
-      
+
       if (chatSession.messages.length > 1) {
-        const historyText = chatSession.messages.slice(-6, -1).map(m => `${m.role}: ${m.content}`).join('\n');
+        const historyText = chatSession.messages
+          .slice(-6, -1)
+          .map((m) => `${m.role}: ${m.content}`)
+          .join('\n');
         chatHistoryContext = `\nRecent Chat History:\n${historyText}\n`;
       }
     }
@@ -183,14 +241,14 @@ export class RepoService {
 You are a senior software engineer.
 
 Answer the question about this repository.
-${fileContext ? fileContext : `\nRepository Structure:\n${JSON.stringify(structure).substring(0, 2000)}\n`}
+${fileContext ? fileContext : `\nRepository Structure:\n${this.llmService.minifyStructure(structure).substring(0, 2000)}\n`}
 ${chatHistoryContext}
 
 Question:
 ${question}
 `;
 
-    const answer = await this.llmService.explainRepoStructure(prompt);
+    const answer = await this.llmService.generateContent(prompt);
 
     if (chatSession) {
       chatSession.messages.push({ role: 'ai', content: answer });
@@ -203,7 +261,7 @@ ${question}
   async getRepo(repoUrl: string, userId?: string) {
     const query: any = { repoUrl };
     if (userId) query.userId = userId;
-    return this.repoModel.findOne(query as any).exec();
+    return this.repoModel.findOne(query).exec();
   }
 
   async repoIntelligence(repoUrl: string, structure: any, userId?: string) {
@@ -227,10 +285,10 @@ Analyze this repository structure and identify:
 4. Important modules
 
 Repository Structure:
-${JSON.stringify(structure, null, 2)}
+${this.llmService.minifyStructure(structure)}
 `;
 
-    const analysis = await this.llmService.explainRepoStructure(prompt);
+    const analysis = await this.llmService.generateContent(prompt);
 
     const query: any = { repoUrl };
     if (userId) query.userId = userId;
@@ -243,9 +301,9 @@ ${JSON.stringify(structure, null, 2)}
           userId,
           structure: JSON.stringify(structure),
           analysis,
-        }
+        },
       },
-      { new: true, upsert: true }
+      { new: true, upsert: true },
     );
 
     return {

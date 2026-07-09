@@ -12,15 +12,20 @@ import {
 } from '@nestjs/common';
 import { RepoService } from './repo.service';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
+import { UsersService } from '../users/users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('repo')
 export class RepoController {
-  constructor(private repoService: RepoService) {}
+  constructor(
+    private repoService: RepoService,
+    private usersService: UsersService,
+  ) {}
 
   @Post('analyze')
   async analyze(@Body() body: any) {
     console.log('Received body:', JSON.stringify(body));
-    
+
     const repoUrl = body?.repoUrl || body?.url;
 
     if (!repoUrl || typeof repoUrl !== 'string') {
@@ -56,12 +61,18 @@ export class RepoController {
   @UseGuards(OptionalJwtAuthGuard)
   @Get('history')
   async getUserHistory(@Request() req: any) {
-    const userId = req.user && !req.user.isGuest 
-      ? (req.user.userId || req.user._id || req.user.email || null) 
-      : null;
-    console.log("getUserHistory called. req.user:", req.user, "userId:", userId);
+    const userId =
+      req.user && !req.user.isGuest
+        ? req.user.userId || req.user._id || req.user.email || null
+        : null;
+    console.log(
+      'getUserHistory called. req.user:',
+      req.user,
+      'userId:',
+      userId,
+    );
     const repos = await this.repoService.getUserRepos(userId);
-    console.log("getUserRepos returned:", repos.length, "repos");
+    console.log('getUserRepos returned:', repos.length, 'repos');
     return repos;
   }
 
@@ -77,8 +88,16 @@ export class RepoController {
       );
     }
 
-    const userId = req.user ? (req.user.userId || req.user._id || req.user.email) : null;
-    const answer = await this.repoService.askQuestion(structure, question, repoUrl, selectedFile, userId);
+    const userId = req.user
+      ? req.user.userId || req.user._id || req.user.email
+      : null;
+    const answer = await this.repoService.askQuestion(
+      structure,
+      question,
+      repoUrl,
+      selectedFile,
+      userId,
+    );
 
     return { answer };
   }
@@ -86,14 +105,18 @@ export class RepoController {
   @UseGuards(OptionalJwtAuthGuard)
   @Get('chat/:repoUrlEncoded')
   async getChatHistoryUrl(
-    @Request() req: any, 
+    @Request() req: any,
     @Param('repoUrlEncoded') repoUrlEncoded: string,
-    @Query('filePath') filePath?: string
+    @Query('filePath') filePath?: string,
   ) {
     if (!req.user) return { history: [] };
     const userId = req.user.userId || req.user._id || req.user.email;
     const repoUrl = decodeURIComponent(repoUrlEncoded);
-    const history = await this.repoService.getChatHistory(userId, repoUrl, filePath);
+    const history = await this.repoService.getChatHistory(
+      userId,
+      repoUrl,
+      filePath,
+    );
     return { history };
   }
 
@@ -109,9 +132,50 @@ export class RepoController {
       );
     }
 
-    const userId = req.user ? (req.user.userId || req.user._id || req.user.email) : null;
-    const result = await this.repoService.repoIntelligence(repoUrl, structure, userId);
+    const userId = req.user
+      ? req.user.userId || req.user._id || req.user.email
+      : null;
+    const result = await this.repoService.repoIntelligence(
+      repoUrl,
+      structure,
+      userId,
+    );
 
     return { result };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('github/list')
+  async listGithubRepos(@Request() req: any) {
+    const user = await this.usersService.findByEmail(req.user.email);
+    if (!user || !user.githubToken) {
+      throw new HttpException('No GitHub account connected', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const response = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+        headers: {
+          Authorization: `Bearer ${user.githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`GitHub API returned ${response.status}`);
+      }
+
+      const repos = await response.json();
+      return repos.map((repo: any) => ({
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.full_name,
+        private: repo.private,
+        url: repo.clone_url,
+        description: repo.description,
+        updatedAt: repo.updated_at,
+      }));
+    } catch (error) {
+      throw new HttpException(`Failed to fetch GitHub repos: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

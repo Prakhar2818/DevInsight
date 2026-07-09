@@ -10,6 +10,7 @@ export class DiagramController {
     const result = await this.diagramService.generateDiagram(
       body.repoUrl,
       body.structure,
+      body.diagramType,
     );
 
     return result;

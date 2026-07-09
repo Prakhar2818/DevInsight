@@ -34,7 +34,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${oswald.variable} font-sans bg-[var(--background)] text-[var(--foreground)]`}>
         <AnimatedBackground />
         
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" disableTransitionOnChange>
           <StoreProvider>
             <AuthGuard>
               <div className="relative z-10 flex min-h-screen flex-col">

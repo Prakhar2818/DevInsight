@@ -33,9 +33,9 @@ describe('ParserService', () => {
         return JSON.stringify({
           dependencies: {
             '@nestjs/core': '^8.0.0',
-            'pg': '^8.7.1',
-            'typeorm': '^0.2.38',
-            'typescript': '^4.4.4',
+            pg: '^8.7.1',
+            typeorm: '^0.2.38',
+            typescript: '^4.4.4',
           },
         });
       }
@@ -62,8 +62,8 @@ describe('ParserService', () => {
       if (filePath.includes('package.json')) {
         return JSON.stringify({
           dependencies: {
-            'react': '^17.0.2',
-            'mongoose': '^6.0.12',
+            react: '^17.0.2',
+            mongoose: '^6.0.12',
           },
         });
       }

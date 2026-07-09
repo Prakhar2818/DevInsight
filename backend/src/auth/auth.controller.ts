@@ -40,4 +40,12 @@ export class AuthController {
       avatar: user.avatar,
     };
   }
+
+  @Post('github')
+  async githubLogin(@Body() body: { code: string }) {
+    if (!body.code) {
+      return { error: 'No code provided' };
+    }
+    return this.authService.githubLogin(body.code);
+  }
 }

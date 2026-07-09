@@ -15,7 +15,9 @@ import { JwtStrategy } from './jwt.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'devinsight-secret-key-for-dev',
+        secret:
+          configService.get<string>('JWT_SECRET') ||
+          'devinsight-secret-key-for-dev',
         signOptions: { expiresIn: '7d' },
       }),
     }),

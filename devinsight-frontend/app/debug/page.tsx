@@ -1,14 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Bug, Sparkles, Loader2, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { Bug, Sparkles, Loader2, ArrowRight, History, X, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function DebugAssistantPage() {
   const [errorLog, setErrorLog] = useState("");
   const [analysis, setAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    import("@/services/api.service").then(({ getDebugHistory }) => {
+      getDebugHistory()
+        .then((res) => setHistory(res.data))
+        .catch(console.error);
+    });
+  }, []);
 
   const handleAnalyze = async () => {
     if (!errorLog.trim()) return;
@@ -24,7 +34,7 @@ export default function DebugAssistantPage() {
       });
 
       const data = await res.json();
-      setAnalysis(data.result);
+      setAnalysis(data.analysis || data.solution || "No analysis returned.");
     } catch (err) {
       console.error("Debug analysis error:", err);
       setAnalysis("Error: Failed to analyze the log. Ensure the local AI is running.");
@@ -46,14 +56,23 @@ export default function DebugAssistantPage() {
               </div>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Error Log Input</h2>
             </div>
-            <button
-              onClick={handleAnalyze}
-              disabled={isLoading || !errorLog.trim()}
-              className="px-4 py-2 bg-[#feefde] border border-[#ffdbb5] text-slate-900 rounded-lg font-semibold hover:bg-[#ffdbb5] transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              Analyze
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="px-3 py-2 bg-white border border-[var(--border)] text-slate-700 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2 text-sm font-medium"
+              >
+                <History className="w-4 h-4" />
+                History
+              </button>
+              <button
+                onClick={handleAnalyze}
+                disabled={isLoading || !errorLog.trim()}
+                className="px-4 py-2 bg-[#feefde] border border-[#ffdbb5] text-slate-900 rounded-lg font-semibold hover:bg-[#ffdbb5] transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Analyze
+              </button>
+            </div>
           </div>
           <div className="flex-1 p-4 bg-slate-900 relative">
             <textarea
@@ -112,6 +131,62 @@ export default function DebugAssistantPage() {
         </div>
 
       </div>
+
+      {/* History Drawer */}
+      <AnimatePresence>
+        {isHistoryOpen && (
+          <motion.div
+            initial={{ x: 400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 400, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed right-0 top-[80px] h-[calc(100vh-80px)] w-96 bg-white border-l border-[var(--border)] shadow-2xl flex flex-col z-50"
+          >
+            <div className="p-4 border-b border-[var(--border)] bg-slate-50 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center text-slate-700 shadow-sm">
+                  <History size={16} />
+                </div>
+                <h3 className="font-bold text-[var(--foreground)]">Debug History</h3>
+              </div>
+              <button onClick={() => setIsHistoryOpen(false)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors text-slate-500">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar bg-slate-50">
+              {history.length === 0 ? (
+                <div className="text-center text-slate-400 mt-10">
+                  <Clock className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                  <p>No debug history found.</p>
+                </div>
+              ) : (
+                history.map((h) => (
+                  <button
+                    key={h._id}
+                    onClick={() => {
+                      setErrorLog(h.error);
+                      setAnalysis(h.solution || h.analysis || "No analysis recorded.");
+                      setIsHistoryOpen(false);
+                    }}
+                    className="w-full text-left bg-white border border-[var(--border)] p-4 rounded-xl hover:border-slate-300 hover:shadow-md transition-all group flex flex-col gap-2"
+                  >
+                    <div className="flex items-start gap-2 text-red-500">
+                      <Bug size={14} className="mt-1 flex-shrink-0" />
+                      <p className="font-mono text-xs line-clamp-2 leading-tight break-all">
+                        {h.error}
+                      </p>
+                    </div>
+                    {h.cause && (
+                      <p className="text-xs text-slate-500 font-medium">Cause: {h.cause}</p>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }
