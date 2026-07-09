@@ -1,4 +1,4 @@
-import "./globals.scss";
+import "./globals.css";
 import { Inter, Oswald } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import AnimatedBackground from "@/components/AnimatedBackground";
