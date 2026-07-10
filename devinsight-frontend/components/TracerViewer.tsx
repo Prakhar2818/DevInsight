@@ -11,6 +11,7 @@ import {
   addEdge,
   Connection,
   Edge,
+  Node,
   BackgroundVariant
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -18,8 +19,8 @@ import { Loader2, Search, FileCode2 } from "lucide-react";
 import { traceFlow, getFileContent } from "../services/api.service";
 
 export default function TracerViewer({ repoContext, selectedFilePath }: { repoContext: string, selectedFilePath?: string }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

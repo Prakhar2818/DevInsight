@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
-import { TreeViewBaseItem } from "@mui/x-tree-view/models";
 import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
 import { getFileTree } from "../services/api.service";
 
@@ -10,6 +9,13 @@ interface FileTreeProps {
   files?: string[];
   repoPath?: string;
   onFileSelect?: (path: string) => void;
+}
+
+interface TreeViewBaseItem {
+  id: string;
+  label: string;
+  children?: TreeViewBaseItem[];
+  [key: string]: any;
 }
 
 export default function FileTree({ files, repoPath, onFileSelect }: FileTreeProps) {

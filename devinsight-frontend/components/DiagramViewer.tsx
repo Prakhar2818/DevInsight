@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { Loader2, Box, Layers, ArrowRightLeft, GitMerge, Settings, LayoutTemplate } from "lucide-react";
 import { generateDiagram } from "../services/api.service";
-import { ReactFlow, Controls, Background, MiniMap, BackgroundVariant, useNodesState, useEdgesState } from '@xyflow/react';
+import { ReactFlow, Controls, Background, MiniMap, BackgroundVariant, useNodesState, useEdgesState, Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 export default function DiagramViewer({ repoContext, repoUrl }: { repoContext: string, repoUrl: string }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [diagramType, setDiagramType] = useState("architecture");

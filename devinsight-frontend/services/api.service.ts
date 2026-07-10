@@ -32,7 +32,7 @@ export const repoIntelligence = (repoData: any) =>
 
 export const askRepo = (question: string, repoUrl: string, selectedFile?: string) => {
   const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
-  let allStructures = {};
+  let allStructures: Record<string, any> = {};
   try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
 
   let structure = {};

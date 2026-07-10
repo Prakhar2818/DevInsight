@@ -45,7 +45,7 @@ export default function RepoInput() {
       
       // Save to allRepoStructures dictionary to support multiple repos
       const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
-      let allStructures = {};
+      let allStructures: Record<string, any> = {};
       try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
       allStructures[url] = dataToSave;
       localStorage.setItem("allRepoStructures", JSON.stringify(allStructures));

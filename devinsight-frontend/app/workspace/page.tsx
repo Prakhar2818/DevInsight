@@ -45,7 +45,7 @@ export default function Workspace() {
 
       // Fetch Architecture if available
       const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
-      let allStructures = {};
+      let allStructures: Record<string, any> = {};
       try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
       
       let parsedStructure = null;

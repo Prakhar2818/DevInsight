@@ -11,9 +11,9 @@ export default function Home() {
       <Hero />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <MotionWrapper animation="slideUp" delay={0.3}>
-          {/* <RepoInput /> */}
-        </MotionWrapper>
+        {/* <MotionWrapper animation="slideUp" delay={0.3}>
+          <RepoInput />
+        </MotionWrapper> */}
 
         <FeatureGrid />
       </div>
