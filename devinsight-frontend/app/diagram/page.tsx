@@ -13,7 +13,7 @@ export default function DiagramPage() {
 
     const url = localStorage.getItem("repoUrl") || "";
     const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
-    let allStructures = {};
+    let allStructures: Record<string, any> = {};
     try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
 
     let structure = {};
