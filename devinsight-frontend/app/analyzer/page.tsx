@@ -41,7 +41,7 @@ export default function AnalyzerPage() {
     const storedUrl = urlParam || localStorage.getItem("repoUrl") || "";
 
     const allStructuresStr = localStorage.getItem("allRepoStructures") || "{}";
-    let allStructures = {};
+    let allStructures: Record<string, any> = {};
     try { allStructures = JSON.parse(allStructuresStr); } catch(e) {}
     
     let parsedStructure = null;
