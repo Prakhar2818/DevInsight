@@ -12,7 +12,7 @@ async function bootstrap() {
     app.useStaticAssets(join(process.cwd(), 'public'));
 
     app.enableCors({
-      origin: ['http://localhost:3000', 'https://devinsight-bm7.pages.dev'],
+      origin: ['http://localhost:3000', 'https://devinsight-bm7.pages.dev', 'https://dev-insight-vb77.vercel.app'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       credentials: true,
     });
