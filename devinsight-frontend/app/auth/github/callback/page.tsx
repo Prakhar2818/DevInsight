@@ -22,7 +22,7 @@ export default function GithubCallbackPage() {
 
     const authenticate = async () => {
       try {
-        const response = await fetch("http://localhost:4000/auth/github", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"}/auth/github`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

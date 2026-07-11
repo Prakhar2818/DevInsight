@@ -72,7 +72,7 @@ export default function AnalyzerPage() {
       });
 
       // Fetch AI Intelligence
-      fetch('http://localhost:4000/repo/intelligence', {
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000'}/repo/intelligence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repoUrl: storedUrl, structure: parsedStructure })

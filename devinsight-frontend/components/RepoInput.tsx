@@ -17,7 +17,7 @@ export default function RepoInput() {
 
   useEffect(() => {
     if (token) {
-      fetch("http://localhost:4000/repo/github/list", {
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"}/repo/github/list`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => res.json())
